@@ -1,0 +1,46 @@
+Given the following SQL statement, describe what the whole query will produce (written answer):
+
+
+SELECT a.customer_id, a.survey_id
+FROM
+	(
+	SELECT 	customer_id,
+			survey_id
+	FROM		survey_results
+	GROUP BY 	customer_id, survey_id
+	HAVING 	COUNT(score) = 3
+	) a
+INNER JOIN
+	(
+	SELECT 	customer_id,
+			survey_Id
+	FROM		survey_results
+	GROUP BY 	customer_id, survey_id
+	HAVING 	MAX(score) < 75
+	) b
+ON 	a.customer_id = b.customer_id AND a.survey_id = b.survey_id;
+
+
+
+The query returns a list of customer_id and survey_id pairs.
+Each pair is a customer who has exactly three recorded scores for that survey and whose highest score on it is below 75.
+Put simply, it finds customers who took the same survey three times and never reached 75.
+
+How each part works
+
+Subquery a groups survey_results by customer and survey, and keeps only the pairs where COUNT(score) = 3.
+The primary key of survey_results includes survey_date, so a customer can take the same survey on different dates. This subquery finds customers with exactly three scored attempts. COUNT(score) ignores NULLs, so an attempt with no score isn’t counted.
+
+Subquery b groups the table the same way and keeps the pairs where MAX(score) < 75.
+That means every scored attempt by that customer on that survey was below 75.
+A pair whose scores are all NULL has a NULL maximum, so it fails the test and is left out.
+
+The INNER JOIN matches a and b on both customer_id and survey_id.
+Only pairs that appear in both subqueries are returned, so both conditions must be true.
+
+Output:
+
+Two columns: customer_id and survey_id.
+Each pair appears at most once, because both subqueries are grouped by that pair.
+Rows come out in no particular order, because there’s no ORDER BY.
+If no customer meets both conditions, the result is empty.
